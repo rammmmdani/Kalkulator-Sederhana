@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kalkulator Node.js</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #20232a;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+      }
+
+      .calculator {
+        background: #303640;
+        padding: 25px;
+        border-radius: 20px;
+        width: 300px;
+      }
+
+      h2 {
+        color: white;
+        text-align: center;
+      }
+
+      #display {
+        background: #171a20;
+        color: white;
+        font-size: 32px;
+        text-align: right;
+        padding: 20px 10px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        min-height: 38px;
+        overflow-wrap: anywhere;
+      }
+
+      .buttons {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+
+      button {
+        padding: 20px;
+        font-size: 20px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+
+      .operator {
+        background: #f39c12;
+        color: white;
+      }
+
+      .equal {
+        background: #27ae60;
+        color: white;
+      }
+
+      .clear {
+        background: #e74c3c;
+        color: white;
+      }
+
+      #message {
+        color: white;
+        text-align: center;
+        min-height: 20px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="calculator">
+      <h2>Kalkulator</h2>
+
+      <div id="display">0</div>
+
+      <div class="buttons">
+        <button class="clear" onclick="clearDisplay()">C</button>
+        <button onclick="deleteNumber()">⌫</button>
+        <button class="operator" onclick="setOperator('bagi')">÷</button>
+        <button class="operator" onclick="setOperator('kali')">×</button>
+
+        <button onclick="addNumber('7')">7</button>
+        <button onclick="addNumber('8')">8</button>
+        <button onclick="addNumber('9')">9</button>
+        <button class="operator" onclick="setOperator('kurang')">−</button>
+
+        <button onclick="addNumber('4')">4</button>
+        <button onclick="addNumber('5')">5</button>
+        <button onclick="addNumber('6')">6</button>
+        <button class="operator" onclick="setOperator('tambah')">+</button>
+
+        <button onclick="addNumber('1')">1</button>
+        <button onclick="addNumber('2')">2</button>
+        <button onclick="addNumber('3')">3</button>
+        <button class="equal" onclick="calculate()">=</button>
+
+        <button onclick="addNumber('0')">0</button>
+        <button onclick="addDecimal()">.</button>
+      </div>
+
+      <p id="message"></p>
+    </div>
+
+    <script>
+      let current = "0";
+      let firstNumber = null;
+      let operator = null;
+      let waiting = false;
+
+      const display = document.getElementById("display");
+      const message = document.getElementById("message");
+
+      function updateDisplay() {
+        display.textContent = current;
+      }
+
+      function addNumber(number) {
+        if (waiting) {
+          current = number;
+          waiting = false;
+        } else {
+          current = current === "0" ? number : current + number;
+        }
+        message.textContent = "";
+        updateDisplay();
+      }
+
+      function addDecimal() {
+        if (waiting) {
+          current = "0";
+          waiting = false;
+        }
+        if (!current.includes(".")) {
+          current += ".";
+          updateDisplay();
+        }
+      }
+
+      function setOperator(op) {
+        if (operator !== null && !waiting) {
+          calculate();
+        }
+        firstNumber = Number(current);
+        operator = op;
+        waiting = true;
+      }
+
+      async function calculate() {
+        if (operator === null || firstNumber === null || waiting) {
+          return;
+        }
+
+        const secondNumber = Number(current);
+
+        try {
+          const response = await fetch(
+            `http://localhost:3000/kalkulator?angka1=${firstNumber}&angka2=${secondNumber}&operator=${operator}`,
+          );
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.pesan || "Perhitungan gagal");
+          }
+
+          current = String(data.hasil);
+          firstNumber = null;
+          operator = null;
+          waiting = true;
+          message.textContent = "Berhasil dihitung oleh Node.js!";
+          updateDisplay();
+        } catch (error) {
+          message.textContent = error.message;
+        }
+      }
+
+      function clearDisplay() {
+        current = "0";
+        firstNumber = null;
+        operator = null;
+        waiting = false;
+        message.textContent = "";
+        updateDisplay();
+      }
+
+      function deleteNumber() {
+        if (!waiting) {
+          current = current.length > 1 ? current.slice(0, -1) : "0";
+          updateDisplay();
+        }
+      }
+    </script>
+  </body>
+</html>
